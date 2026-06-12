@@ -49,7 +49,6 @@
     .intro-header { font-size: 1.2rem; letter-spacing: 8px; margin-bottom: 30px; text-transform: uppercase; color: rgba(255,255,255,0.7); }
     .flowing-menu { display: flex; flex-direction: column; width: 100%; max-width: 900px; border-top: 1px solid rgba(255, 255, 255, 0.1); }
     .menu-item { position: relative; padding: 40px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.1); overflow: hidden; text-align: center; cursor: pointer; }
-    /* FIXED TEXT SIZE FOR CUTIEE */
     .menu-text { position: relative; font-size: clamp(2.5rem, 9vw, 4.5rem); font-weight: 900; text-transform: uppercase; color: white; z-index: 3; transition: all 0.4s ease; pointer-events: none; }
     .marquee-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; z-index: 2; display: flex; align-items: center; background: rgba(0,0,0,0.6); transition: opacity 0.5s ease; }
     .marquee { display: flex; width: max-content; animation: scrollMarquee 15s linear infinite; }
@@ -82,7 +81,7 @@
     .p5 { transform: rotateY(240deg) translateZ(280px); } .p6 { transform: rotateY(300deg) translateZ(280px); }
     @keyframes spinOrbit { from { transform: rotateY(0deg); } to { transform: rotateY(360deg); } }
 
-    /* --- PAGE 5: THE POSTER HIGHLIGHT (NEW BEAST) --- */
+    /* --- PAGE 5: THE POSTER HIGHLIGHT --- */
     .poster-section { display: flex; flex-direction: row; width: 100%; height: 100vh; padding: 0; gap: 0; overflow: hidden; pointer-events: auto; perspective: 1000px; }
     .poster-item { flex: 1; height: 100%; position: relative; overflow: hidden; perspective: 1000px; border-right: 1px solid rgba(255,255,255,0.05); }
     .poster-left { opacity: 0; transform: translateX(-50px); }
@@ -154,11 +153,18 @@
     .text-column p { font-size: clamp(1rem, 4vw, 1.3rem); color: rgba(255,255,255,0.9); line-height: 1.7; margin-bottom: 25px; }
     .text-column .sleepy-text { font-size: clamp(0.95rem, 3.5vw, 1.2rem); color: #00f2fe; font-style: italic; font-weight: bold; background: rgba(0, 242, 254, 0.1); padding: 20px; border-left: 4px solid #00f2fe; border-radius: 6px; }
     
-    #secret-message { position: absolute; bottom: 8%; width: 100%; text-align: center; font-size: clamp(1.2rem, 5vw, 2rem); color: #ff69b4; font-weight: 900; text-transform: uppercase; letter-spacing: 8px; opacity: 0; transform: translateY(30px) scale(0.9); transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); pointer-events: none; text-shadow: 0 0 30px rgba(255, 105, 180, 0.9), 0 0 10px #fff; }
+    /* MODERN NEON BUTTON STYLING */
+    .tap-hint-btn { margin-top: 35px; font-size: 0.85rem; color: #fff; letter-spacing: 4px; font-weight: 600; text-transform: uppercase; animation: floatPulse 2s ease-in-out infinite; background: rgba(255, 105, 180, 0.1); border: 1px solid rgba(255, 105, 180, 0.4); padding: 12px 30px; display: inline-block; border-radius: 50px; backdrop-filter: blur(5px); pointer-events: none; text-shadow: 0 0 10px rgba(255,255,255,0.5); }
+    @keyframes floatPulse { 
+        0%, 100% { transform: translateY(0); box-shadow: 0 0 15px rgba(255, 105, 180, 0.2); } 
+        50% { transform: translateY(-5px); box-shadow: 0 0 25px rgba(255, 105, 180, 0.6); border-color: #ff69b4; } 
+    }
+
+    #secret-message { position: absolute; bottom: 8%; width: 100%; text-align: center; font-size: clamp(1.2rem, 5vw, 2rem); color: #ff69b4; font-weight: 900; text-transform: uppercase; letter-spacing: 8px; opacity: 0; transform: translateY(30px) scale(0.9); transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); pointer-events: none; text-shadow: 0 0 30px rgba(255, 105, 180, 0.9), 0 0 10px #fff; z-index: 100; }
     #secret-message.revealed { opacity: 1; transform: translateY(0) scale(1); }
 
-    .cube-touch-zone { position: absolute; right: 0; top: 0; width: 50%; height: 100%; z-index: 20; cursor: grab; pointer-events: auto; touch-action: pan-y; }
-    .cube-touch-zone:active { cursor: grabbing; }
+    .cube-touch-zone { position: absolute; right: 0; top: 0; width: 50%; height: 100%; z-index: 20; cursor: pointer; pointer-events: auto; touch-action: pan-y; }
+    .cube-touch-zone:active { cursor: pointer; }
 
     /* MOBILE ADJUSTMENTS */
     @media (max-width: 768px) {
@@ -348,6 +354,11 @@
             <h1 class="reveal-text glitch-title" data-text="Our Story">Our<br>Story</h1>
             <p class="reveal-text delay-1">Every picture tells a story, and ours is my absolute favorite. To all the chaos the laughs and the unforgettable moments we've shared.</p>
             <p class="sleepy-text reveal-text delay-2">And yes... I know you would probably rather be sleeping right now 😴 but wake up and look at how cute we are!</p>
+            
+            <div class="reveal-text delay-2 tap-hint-btn">
+                Tap To Unlock 💖
+            </div>
+
         </div>
         <div class="cube-touch-zone trigger-blip" id="cube-zone"></div>
         <div id="secret-message">Love you bachaa💖</div>
@@ -424,6 +435,31 @@
             let velocity = 150 + Math.random() * 250;
             conf.animate([ { transform: 'translate(0,0) scale(1)', opacity: 1 }, { transform: `translate(${Math.cos(angle)*velocity}px, ${Math.sin(angle)*velocity}px) scale(0)`, opacity: 0 } ], { duration: 800 + Math.random()*500, easing: 'cubic-bezier(.37,0,.23,1)' });
             setTimeout(() => conf.remove(), 1500);
+        }
+    }
+
+    // --- RAIN OF BOWS 🎀 ---
+    function rainBows() {
+        for(let i=0; i<30; i++) {
+            let bow = document.createElement('div');
+            bow.innerText = '🎀';
+            bow.style.position = 'fixed';
+            bow.style.fontSize = (20 + Math.random() * 25) + 'px';
+            bow.style.left = (Math.random() * 100) + 'vw';
+            bow.style.top = '-50px';
+            bow.style.zIndex = 9999;
+            bow.style.pointerEvents = 'none';
+            bow.style.filter = 'drop-shadow(0 0 10px rgba(255,105,180,0.8))';
+            document.body.appendChild(bow);
+
+            let duration = 2000 + Math.random() * 2000;
+            let drift = (Math.random() - 0.5) * 300; 
+            bow.animate([
+                { transform: `translate(0, 0) rotate(0deg)`, opacity: 1 },
+                { transform: `translate(${drift}px, 110vh) rotate(${Math.random() * 720}deg)`, opacity: 0 }
+            ], { duration: duration, easing: 'cubic-bezier(.25,.46,.45,.94)' });
+
+            setTimeout(() => bow.remove(), duration);
         }
     }
 
@@ -585,9 +621,33 @@
     const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
     scene.add(particlesMesh);
 
-    // MAIN CUBE
-    const materials = ['images/photo1.jpg', 'images/photo2.jpg', 'images/photo3.jpg', 'images/photo4.jpg', 'images/photo5.jpg', 'images/photo2.jpg'].map(p => new THREE.MeshBasicMaterial({ map: new THREE.TextureLoader().load(p), side: THREE.DoubleSide }));
-    const posterCube = new THREE.Mesh(new THREE.BoxGeometry(isMobile ? 2.5 : 3.5, isMobile ? 2.5 : 3.5, isMobile ? 2.5 : 3.5), materials);
+    // --- MAIN CUBE KI JAGAH GLOWING 3D HEART ---
+    const heartShape = new THREE.Shape();
+    heartShape.moveTo( 25, 25 );
+    heartShape.bezierCurveTo( 25, 25, 20, 0, 0, 0 );
+    heartShape.bezierCurveTo( -30, 0, -30, 35, -30, 35 );
+    heartShape.bezierCurveTo( -30, 55, -10, 77, 25, 95 );
+    heartShape.bezierCurveTo( 60, 77, 80, 55, 80, 35 );
+    heartShape.bezierCurveTo( 80, 35, 80, 0, 50, 0 );
+    heartShape.bezierCurveTo( 35, 0, 25, 25, 25, 25 );
+
+    const extrudeSettings = { depth: 8, bevelEnabled: true, bevelSegments: 2, steps: 2, bevelSize: 2, bevelThickness: 2 };
+    const geometry = new THREE.ExtrudeGeometry( heartShape, extrudeSettings );
+    geometry.center(); // Heart ko center mein laane ke liye
+
+    // Bahar ka Blue Wireframe
+    const material = new THREE.MeshBasicMaterial({ color: 0x00f2fe, wireframe: true, transparent: true, opacity: 0.6 });
+    const posterCube = new THREE.Mesh(geometry, material); // Variable ka naam wahi rakha hai taaki baaki animation na tute
+
+    // Andar ka Solid Pink Heart
+    const innerMat = new THREE.MeshBasicMaterial({ color: 0xff69b4, transparent: true, opacity: 0.9 });
+    const innerHeart = new THREE.Mesh(geometry, innerMat);
+    innerHeart.scale.set(0.85, 0.85, 0.85); // Andar wale dil ko thoda chota kiya
+    posterCube.add(innerHeart);
+
+    // Size aur Position adjust
+    posterCube.scale.set(isMobile ? 0.025 : 0.035, isMobile ? 0.025 : 0.035, isMobile ? 0.025 : 0.035); 
+    posterCube.rotation.z = Math.PI; // Heart ko sidha khada karne ke liye
     posterCube.position.set(isMobile ? 0 : 3, -25, 0); 
     scene.add(posterCube);
 
@@ -595,9 +655,9 @@
     const torusGeometry = new THREE.TorusKnotGeometry(isMobile ? 2.2 : 3, 0.1, 100, 16);
     const torusMaterial = new THREE.MeshBasicMaterial({ color: 0xff69b4, wireframe: true, transparent: true, opacity: 0.3 });
     const torusMesh = new THREE.Mesh(torusGeometry, torusMaterial);
-    scene.add(torusMesh); // Ab ye cube se alag ho gaya aur background mein aa gaya
+    scene.add(torusMesh); 
 
-    // --- GYROSCOPE PARALLAX (NOW USED FOR POSTER TOO) ---
+    // --- GYROSCOPE PARALLAX ---
     let gyroX = 0; let gyroY = 0;
     if(window.DeviceOrientationEvent) {
         window.addEventListener('deviceorientation', (e) => {
@@ -606,11 +666,21 @@
         });
     }
 
-    // --- CUBE SWIPE & ENDING ---
+    // --- HEART SWIPE, BOW RAIN & ENDING ---
     let hyperDrive = false; const secretMessage = document.getElementById('secret-message'); const cubeZone = document.getElementById('cube-zone');
     let isDraggingCube = false; let manualRotationVelocity = 0; let previousMouseX = 0;
 
-    cubeZone.addEventListener('click', () => { if(!hyperDrive) { playUIBlip(); hyperDrive = true; secretMessage.classList.add('revealed'); setTimeout(() => { hyperDrive = false; secretMessage.classList.remove('revealed'); }, 4000); } });
+    // TAP PE BOWS KI BAARISH 🎀
+    cubeZone.addEventListener('click', () => { 
+        if(!hyperDrive) { 
+            playUIBlip(); 
+            hyperDrive = true; 
+            rainBows(); // Bows girana shuru
+            secretMessage.classList.add('revealed'); 
+            setTimeout(() => { hyperDrive = false; secretMessage.classList.remove('revealed'); }, 4000); 
+        } 
+    });
+    
     cubeZone.addEventListener('touchstart', (e) => { isDraggingCube = true; previousMouseX = e.touches[0].clientX; }, {passive: true});
     cubeZone.addEventListener('touchmove', (e) => { if(isDraggingCube) { manualRotationVelocity = (e.touches[0].clientX - previousMouseX) * 0.005; previousMouseX = e.touches[0].clientX; } }, {passive: true});
     cubeZone.addEventListener('touchend', () => { isDraggingCube = false; }, {passive: true});
@@ -630,7 +700,7 @@
       scrollVelocity = Math.abs(window.scrollY - lastScrollY) * 0.01; lastScrollY = window.scrollY;
     });
 
-    // --- POSTER INTERACTION LOGIC (NEW) ---
+    // --- POSTER INTERACTION LOGIC ---
     const highlight1Img = document.getElementById('highlight1-img');
     const highlight2Img = document.getElementById('highlight2-img');
 
@@ -654,7 +724,7 @@
       
       if(scrollVelocity > 0.5) {
           particlesMaterial.size = Math.min(0.2, scrollVelocity * 0.1);
-          particlesMesh.scale.y = 1 + scrollVelocity * 5; // Stretch lines
+          particlesMesh.scale.y = 1 + scrollVelocity * 5; 
       } else {
           particlesMaterial.size += (0.05 - particlesMaterial.size) * 0.1;
           particlesMesh.scale.y += (1 - particlesMesh.scale.y) * 0.1;
@@ -665,23 +735,21 @@
       camera.position.y += (-gyroY - camera.position.y) * 0.05;
       camera.lookAt(0,0,0); 
 
-      // Gyro Shift for Cinematic Poster (NEW)
+      // Gyro Shift for Cinematic Poster
       if(isMobile) {
-          // Subtle opposite shift for dynamic feel
           highlight1Img.style.transform = `scale(1.1) translate(${gyroX * 5}px, ${gyroY * 5}px)`;
           highlight2Img.style.transform = `scale(1.1) translate(${-gyroX * 5}px, ${-gyroY * 5}px)`;
       } else {
-          // Mouse-based shift for desktop (NEW)
           const centerX = window.innerWidth / 2;
           const centerY = window.innerHeight / 2;
-          const moveX = (targetX * window.innerWidth - centerX) * 0.01; // subtle amount
+          const moveX = (targetX * window.innerWidth - centerX) * 0.01; 
           const moveY = (window.innerHeight - targetY * window.innerHeight - centerY) * 0.01;
           
           highlight1Img.style.transform = `scale(1.1) translate(${moveX}px, ${moveY}px)`;
           highlight2Img.style.transform = `scale(1.1) translate(${-moveX}px, ${-moveY}px)`;
       }
 
-      // Cube entrance at very end
+      // Heart entrance at very end
       let targetCubeY = -25; 
       if (scrollProgress > 0.90) { targetCubeY = -15 + (1 - Math.pow(1 - Math.min((scrollProgress - 0.90) / 0.10, 1.0), 4)) * 15; if (isMobile) targetCubeY -= 2; }
       currentCubeY += (targetCubeY - currentCubeY) * 0.1; posterCube.position.y = currentCubeY;
@@ -693,12 +761,13 @@
       torusMesh.rotation.y += 0.015;
 
       if (hyperDrive) { 
-          posterCube.rotation.y += 0.2; posterCube.rotation.x += 0.1; 
+          posterCube.rotation.y += 0.2; 
+          posterCube.rotation.z = Math.PI + 0.1; 
           torusMesh.scale.set(1.5, 1.5, 1.5);
           torusMaterial.opacity = 0.8;
       } else { 
           posterCube.rotation.y += (isDraggingCube ? 0 : 0.003) + (scrollVelocity * 0.2) + manualRotationVelocity; 
-          posterCube.rotation.x += (isDraggingCube ? 0 : 0.001) + (scrollVelocity * 0.1); 
+          posterCube.rotation.z = Math.PI; 
           torusMesh.scale.set(1, 1, 1);
           torusMaterial.opacity = 0.3;
       }
