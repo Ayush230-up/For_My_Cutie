@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>For My Bestie</title>
+  <style>
+    /* --- CORE SYSTEM --- */
+    body { margin: 0; min-height: 1050vh; background-color: #000; color: white; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; overflow-x: hidden; touch-action: pan-y; -webkit-tap-highlight-color: transparent; }
+    ::-webkit-scrollbar { display: none; }
+    
+    /* --- THE PRELOADER --- */
+    #preloader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 10000; background: #000; display: flex; align-items: flex-end; justify-content: flex-end; padding: 40px; box-sizing: border-box; transition: opacity 0.8s ease, transform 0.8s ease; }
+    #load-counter { font-size: clamp(4rem, 15vw, 10rem); font-weight: 900; color: transparent; -webkit-text-stroke: 2px #333; font-variant-numeric: tabular-nums; }
+    
+    /* --- GAME INTRO OVERLAY --- */
+    #enter-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; background: #050505; transition: opacity 1.5s ease-out, visibility 1.5s; overflow: hidden; display: none; flex-direction: column; align-items: center; justify-content: center; }
+    .game-btn { position: absolute; padding: 15px 30px; font-size: 1.1rem; font-weight: bold; text-transform: uppercase; letter-spacing: 3px; color: #fff; background: #000; border-radius: 10px; cursor: pointer; transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s, opacity 0.5s; z-index: 100; border: 2px solid #ff69b4; box-shadow: 0 0 15px rgba(255,105,180,0.3); }
+    .game-btn.end { border-color: #00f2fe; box-shadow: 0 0 15px rgba(0,242,254,0.3); }
+    #begin-btn { top: 40%; left: 50%; transform: translate(-50%, -50%); }
+    #end-btn { top: 60%; left: 50%; transform: translate(-50%, -50%); }
+    .game-header { position: absolute; top: 10%; width: 100%; text-align: center; font-size: 1rem; letter-spacing: 6px; text-transform: uppercase; color: rgba(255,255,255,0.8); animation: pulse-slow 2s infinite; }
+    .game-subtext { position: absolute; bottom: 5%; width: 100%; text-align: center; font-size: 0.7rem; color: rgba(255,255,255,0.5); letter-spacing: 3px; text-transform: uppercase; }
+    @keyframes pulse-slow { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
+    .confetti { position: absolute; width: 8px; height: 8px; background-color: #ff69b4; opacity: 0; pointer-events: none; border-radius: 50%; }
+
+    /* --- UNIVERSAL 3D LAYERS --- */
+    #canvas-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; }
+    #noise-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 5; pointer-events: none; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.06'/%3E%3C/svg%3E"); }
+    #content { position: absolute; top: 0; left: 0; width: 100%; z-index: 10; pointer-events: none; perspective: 1000px; }
+
+    section { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: auto; position: relative; z-index: 10; padding: 10vh 0; box-sizing: border-box; }
+    .spacer { height: 15vh; pointer-events: none; } 
+
+    /* CHROMATIC ABERRATION REVEALS */
+    .reveal-text { opacity: 0; transform: translateY(50px); transition: all 1.2s cubic-bezier(0.2, 0.8, 0.2, 1); }
+    .reveal-text.visible { opacity: 1; transform: translateY(0); }
+    .delay-1 { transition-delay: 0.1s; } .delay-2 { transition-delay: 0.2s; } 
+    
+    .glitch-title { position: relative; display: inline-block; }
+    .glitch-title::before, .glitch-title::after { content: attr(data-text); position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0.5; pointer-events: none; transition: transform 0.3s ease; }
+    .glitch-title::before { color: #00f2fe; z-index: -1; transform: translate(-2px, 2px); }
+    .glitch-title::after { color: #ff69b4; z-index: -2; transform: translate(2px, -2px); }
+    .reveal-text.visible .glitch-title::before { transform: translate(-4px, 0); animation: jitter 3s infinite linear alternate; }
+    .reveal-text.visible .glitch-title::after { transform: translate(4px, 0); animation: jitter 2.5s infinite linear alternate-reverse; }
+    @keyframes jitter { 0%, 100% { transform: translate(0,0); } 10% { transform: translate(-2px, 1px); } 20% { transform: translate(2px, -1px); } 30% { transform: translate(-1px, 2px); } 40% { transform: translate(1px, -2px); } }
+
+    /* --- PAGE 1: MARQUEE --- */
+    .intro-header { font-size: 1.2rem; letter-spacing: 8px; margin-bottom: 30px; text-transform: uppercase; color: rgba(255,255,255,0.7); }
+    .flowing-menu { display: flex; flex-direction: column; width: 100%; max-width: 900px; border-top: 1px solid rgba(255, 255, 255, 0.1); }
+    .menu-item { position: relative; padding: 40px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.1); overflow: hidden; text-align: center; cursor: pointer; }
+    .menu-text { position: relative; font-size: clamp(2.5rem, 10vw, 5rem); font-weight: 900; text-transform: uppercase; color: white; z-index: 3; transition: all 0.4s ease; pointer-events: none; }
+    .marquee-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; z-index: 2; display: flex; align-items: center; background: rgba(0,0,0,0.6); transition: opacity 0.5s ease; }
+    .marquee { display: flex; width: max-content; animation: scrollMarquee 15s linear infinite; }
+    .marquee img { height: 140px; width: 220px; object-fit: cover; margin-right: 20px; border-radius: 12px; opacity: 0.85; box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
+    @keyframes scrollMarquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+    .menu-item:hover .marquee-container, .menu-item:active .marquee-container { opacity: 1; }
+    .menu-item:hover .menu-text, .menu-item:active .menu-text { color: transparent; -webkit-text-stroke: 1px #fff; }
+
+    /* --- PAGE 2: HACKER --- */
+    .hacker-box { background: rgba(10, 10, 10, 0.5); backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px); border: 1px solid rgba(0, 242, 254, 0.3); padding: 50px 30px; border-radius: 20px; text-align: center; width: 85%; max-width: 650px; box-shadow: 0 30px 60px rgba(0,0,0,0.8); position: relative; overflow: hidden; }
+    .hacker-box h3 { color: #00f2fe; margin: 0 0 20px 0; font-size: 1.5rem; letter-spacing: 3px; text-transform: uppercase; font-family: monospace; }
+    .hacker-text { font-size: 1.1rem; line-height: 1.8; color: rgba(255,255,255,0.9); margin: 0; min-height: 80px; }
+    .hacker-highlight { color: #ff69b4; font-weight: bold; text-shadow: 0 0 10px rgba(255,105,180,0.5); }
+
+    /* --- PAGE 3: HUD --- */
+    .hud-box { width: 85%; max-width: 600px; padding: 40px; background: rgba(0,0,0,0.7); border: 1px solid #ff69b4; border-radius: 15px; font-family: monospace; position: relative; }
+    .hud-box::after { content: 'CO-OP MODE ACTIVE'; position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: #ff69b4; color: #000; padding: 2px 15px; font-weight: bold; border-radius: 10px; font-size: 0.8rem; letter-spacing: 2px; }
+    .hud-stat { margin-bottom: 25px; }
+    .hud-label { display: flex; justify-content: space-between; color: #00f2fe; font-size: 1rem; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 2px; }
+    .hud-bar-bg { width: 100%; height: 10px; background: rgba(255,255,255,0.1); border-radius: 5px; overflow: hidden; }
+    .hud-bar-fill { height: 100%; background: linear-gradient(90deg, #00f2fe, #ff69b4); width: 0%; transition: width 1.5s cubic-bezier(0.2, 0.8, 0.2, 1); box-shadow: 0 0 10px #ff69b4; }
+
+    /* --- PAGE 4: ORBIT --- */
+    .orbit-section { height: 70vh; overflow: hidden; perspective: 1200px; display: flex; align-items: center; justify-content: center; width: 100%; }
+    .spinner { position: relative; width: 200px; height: 300px; transform-style: preserve-3d; animation: spinOrbit 25s infinite linear; pointer-events: none; }
+    .orbit-panel { position: absolute; width: 100%; height: 100%; border-radius: 15px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.8); border: 1px solid rgba(255,255,255,0.1); }
+    .orbit-panel img { width: 100%; height: 100%; object-fit: cover; opacity: 0.9; }
+    .p1 { transform: rotateY(0deg) translateZ(280px); } .p2 { transform: rotateY(60deg) translateZ(280px); }
+    .p3 { transform: rotateY(120deg) translateZ(280px); } .p4 { transform: rotateY(180deg) translateZ(280px); }
+    .p5 { transform: rotateY(240deg) translateZ(280px); } .p6 { transform: rotateY(300deg) translateZ(280px); }
+    @keyframes spinOrbit { from { transform: rotateY(0deg); } to { transform: rotateY(360deg); } }
+
+    /* --- PAGE 5: THE POSTER HIGHLIGHT (NEW BEAST) --- */
+    .poster-section { display: flex; flex-direction: row; width: 100%; height: 100vh; padding: 0; gap: 0; overflow: hidden; pointer-events: auto; perspective: 1000px; }
+    .poster-item { flex: 1; height: 100%; position: relative; overflow: hidden; perspective: 1000px; border-right: 1px solid rgba(255,255,255,0.05); }
+    .poster-left { opacity: 0; transform: translateX(-50px); }
+    .poster-right { opacity: 0; transform: translateX(50px); }
+    
+    .poster-item img { width: 100%; height: 100%; object-fit: cover; filter: grayscale(100%) contrast(110%); transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1), filter 0.5s ease; pointer-events: none; }
+    
+    .poster-item.in-view { opacity: 1; transform: translateX(0); transition: all 1.2s cubic-bezier(0.2, 0.8, 0.2, 1); }
+    .poster-left.in-view { transition-delay: 0.1s; } .poster-right.in-view { transition-delay: 0.3s; }
+
+    .poster-content { position: absolute; bottom: 10%; left: 10%; z-index: 10; text-align: left; max-width: 80%; pointer-events: none; }
+    .poster-title { font-size: clamp(2rem, 8vw, 4rem); font-weight: 900; text-transform: uppercase; color: white; margin: 0; letter-spacing: -2px; line-height: 0.9; }
+    .poster-subtitle { font-size: 0.9rem; color: rgba(255,255,255,0.7); letter-spacing: 4px; text-transform: uppercase; margin-top: 15px; }
+
+    /* Interactions */
+    .poster-item:hover img, .poster-item:active img { filter: grayscale(0%) contrast(100%); transform: scale(1.05); }
+    .poster-item:hover .glitch-title::before, .poster-item:active .glitch-title::before { transform: translate(-8px, 0) scale(1.03); }
+    .poster-item:hover .glitch-title::after, .poster-item:active .glitch-title::after { transform: translate(8px, 0) scale(1.03); }
+
+    /* Mobile adaptation for Poster */
+    @media (max-width: 768px) {
+        .poster-section { flex-direction: column; height: 100vh; }
+        .poster-item { flex: 1; width: 100%; border-right: none; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .poster-left { transform: translateY(-50px); } .poster-right { transform: translateY(50px); }
+        .poster-content { bottom: 5%; left: 5%; text-align: left; }
+        .poster-title { font-size: clamp(2rem, 10vw, 3rem); }
+        .poster-item:hover img, .poster-item:active img { transform: scale(1.02); } /* calmer on mobile */
+    }
+
+    /* --- PAGE 6: VIDEO --- */
+    .video-container { width: 95%; max-width: 800px; background: rgba(10,10,10,0.9); padding: 15px; border-radius: 15px; border: 1px solid rgba(0,242,254,0.3); text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.8); }
+    .video-container h2 { margin: 0 0 15px 0; color: #fff; letter-spacing: 6px; text-transform: uppercase; font-size: 1.1rem; }
+    .video-frame { container-type: inline-size; width: 100%; aspect-ratio: 16 / 9; display: flex; align-items: center; justify-content: center; overflow: hidden; border-radius: 8px; background: #000; }
+    .edit-player { width: 56.25cqw; height: 100cqw; transform: rotate(-90deg); object-fit: cover; }
+
+    /* --- PAGE 7: TIMELINE --- */
+    .timeline { width: 85%; max-width: 500px; position: relative; padding-left: 30px; border-left: 2px solid rgba(255,105,180,0.5); margin: 40px 0; }
+    .time-node { position: relative; margin-bottom: 40px; }
+    .time-node::before { content: ''; position: absolute; left: -37px; top: 0; width: 12px; height: 12px; background: #000; border: 2px solid #ff69b4; border-radius: 50%; box-shadow: 0 0 10px #ff69b4; }
+    .t-time { display: block; font-weight: bold; color: #00f2fe; font-size: 1.2rem; letter-spacing: 2px; margin-bottom: 5px; }
+    .t-desc { color: rgba(255,255,255,0.85); font-size: 1rem; line-height: 1.5; }
+
+    /* --- PAGE 8: CARDS --- */
+    .cards-container { display: flex; gap: 40px; flex-wrap: wrap; justify-content: center; width: 100%; max-width: 1100px; perspective: 1500px; padding: 0 20px; box-sizing: border-box; }
+    .flip-card { width: 100%; max-width: 320px; height: 420px; cursor: pointer; border-radius: 20px; opacity: 0; transform: translateY(100px) scale(0.8) rotateX(15deg); transition: opacity 0.4s ease, transform 0.7s cubic-bezier(0.34, 1.56, 0.64, 1); }
+    .flip-card.in-view { opacity: 1; transform: translateY(0) scale(1) rotateX(0deg); }
+    .flip-card-inner { position: relative; width: 100%; height: 100%; text-align: center; transform-style: preserve-3d; transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); box-shadow: 0 15px 40px rgba(0,0,0,0.6); border-radius: 20px; }
+    .flip-card-front, .flip-card-back { position: absolute; width: 100%; height: 100%; -webkit-backface-visibility: hidden; backface-visibility: hidden; border-radius: 20px; overflow: hidden; display: flex; flex-direction: column; justify-content: center; align-items: center; background: rgba(20, 20, 20, 0.7); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.15); }
+    .flip-card-front h2 { transform: translateZ(50px); font-weight: 300; letter-spacing: 2px; font-size: 1.6rem; margin-bottom: 10px; pointer-events: none; text-shadow: 0 5px 15px rgba(0,0,0,0.8); }
+    .flip-card-front p { transform: translateZ(30px); font-size: 0.95rem; color: rgba(255,255,255,0.8); padding: 0 25px; pointer-events: none; }
+    .flip-card-front .emoji { transform: translateZ(70px); font-size: 4rem; margin-top: 20px; pointer-events: none; }
+    .flip-card-front .hover-hint { transform: translateZ(25px); margin-top: 30px; font-size: 0.75rem; color: #ff69b4; letter-spacing: 4px; font-weight: bold; text-transform: uppercase; animation: pulse 1.5s infinite; }
+    .glare { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle at 50% 50%, rgba(255,255,255,0.2) 0%, transparent 50%); opacity: 0; transition: opacity 0.3s ease; pointer-events: none; z-index: 10; border-radius: 20px; }
+    .flip-card:hover .glare, .flip-card:active .glare { opacity: 1; }
+    .flip-card-back { transform: rotateY(180deg); padding: 8px; background: rgba(0, 0, 0, 0.95); border: 1px solid rgba(255, 105, 180, 0.5); }
+    .flip-card-back img { transform: translateZ(30px); width: 95%; height: 95%; object-fit: cover; border-radius: 12px; pointer-events: none; }
+
+    /* --- PAGE 9: THE VAULT --- */
+    .vault-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 15px; width: 90%; max-width: 800px; margin-top: 20px; pointer-events: auto; }
+    .vault-item { position: relative; border-radius: 12px; overflow: hidden; cursor: crosshair; transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s; aspect-ratio: 1/1; }
+    .vault-item img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.6s ease, filter 0.4s ease; filter: grayscale(50%) contrast(120%); }
+    .vault-item:hover, .vault-item:active { transform: scale(1.05) translateY(-5px); box-shadow: 0 15px 30px rgba(0,242,254,0.4); z-index: 5; }
+    .vault-item:hover img, .vault-item:active img { transform: scale(1.1); filter: grayscale(0%) contrast(100%); }
+
+    /* --- PAGE 10: FINALE --- */
+    .final-layout { min-height: 100vh; width: 100%; display: flex; flex-direction: row; align-items: center; justify-content: flex-start; padding: 0 8%; box-sizing: border-box; pointer-events: none; perspective: 1000px; position: relative; }
+    .text-column { flex: 0 0 45%; max-width: 500px; padding-right: 40px; z-index: 10; pointer-events: auto; }
+    .text-column h1 { font-size: clamp(4rem, 12vw, 7rem); margin: 0; line-height: 0.9; letter-spacing: -4px; background: linear-gradient(45deg, #ff69b4, #00f2fe); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 25px; filter: drop-shadow(0 10px 20px rgba(255,105,180,0.2)); }
+    .text-column p { font-size: clamp(1rem, 4vw, 1.3rem); color: rgba(255,255,255,0.9); line-height: 1.7; margin-bottom: 25px; }
+    .text-column .sleepy-text { font-size: clamp(0.95rem, 3.5vw, 1.2rem); color: #00f2fe; font-style: italic; font-weight: bold; background: rgba(0, 242, 254, 0.1); padding: 20px; border-left: 4px solid #00f2fe; border-radius: 6px; }
+    
+    #secret-message { position: absolute; bottom: 8%; width: 100%; text-align: center; font-size: clamp(1.2rem, 5vw, 2rem); color: #ff69b4; font-weight: 900; text-transform: uppercase; letter-spacing: 8px; opacity: 0; transform: translateY(30px) scale(0.9); transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); pointer-events: none; text-shadow: 0 0 30px rgba(255, 105, 180, 0.9), 0 0 10px #fff; }
+    #secret-message.revealed { opacity: 1; transform: translateY(0) scale(1); }
+
+    .cube-touch-zone { position: absolute; right: 0; top: 0; width: 50%; height: 100%; z-index: 20; cursor: grab; pointer-events: auto; touch-action: pan-y; }
+    .cube-touch-zone:active { cursor: grabbing; }
+
+    /* MOBILE ADJUSTMENTS */
+    @media (max-width: 768px) {
+        .final-layout { flex-direction: column; justify-content: center; text-align: center; padding: 0 6%; margin-top: -10vh; }
+        .text-column { flex: 1; padding-right: 0; }
+        .text-column .sleepy-text { border-left: none; border-top: 4px solid #00f2fe; }
+        .cards-container { gap: 60px; } 
+        .cube-touch-zone { width: 100%; height: 50vh; top: auto; bottom: 0; }
+        #secret-message { bottom: 3%; }
+        .hacker-box { width: 90%; padding: 40px 20px; }
+        .spinner { width: 160px; height: 240px; }
+        .p1 { transform: rotateY(0deg) translateZ(220px); } .p2 { transform: rotateY(60deg) translateZ(220px); }
+        .p3 { transform: rotateY(120deg) translateZ(220px); } .p4 { transform: rotateY(180deg) translateZ(220px); }
+        .p5 { transform: rotateY(240deg) translateZ(220px); } .p6 { transform: rotateY(300deg) translateZ(220px); }
+        .hud-box { width: 90%; padding: 30px 20px; }
+        .vault-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+
+  <audio id="bg-music" loop preload="auto"><source src="song.mp3" type="audio/mpeg"></audio>
+
+  <div id="preloader"><div id="load-counter">000</div></div>
+
+  <div id="enter-screen">
+      <div class="game-header">System Locked</div>
+      <button id="begin-btn" class="game-btn">Unlock</button>
+      <button id="end-btn" class="game-btn end">Abort</button>
+      <div class="game-subtext">Tap to pursue target. Turn volume up.</div>
+  </div>
+
+  <div id="canvas-container"></div>
+  <div id="noise-overlay"></div>
+
+  <div id="content">
+    
+    <section>
+      <div class="intro-header reveal-text">For My Bestie</div>
+      <div class="flowing-menu reveal-text delay-1">
+        <div class="menu-item trigger-blip">
+            <div class="marquee-container">
+                <div class="marquee">
+                    <img src="images/photo1.jpg" alt="pic" loading="lazy"><img src="images/photo2.jpg" alt="pic" loading="lazy"><img src="images/photo3.jpg" alt="pic" loading="lazy"><img src="images/photo4.jpg" alt="pic" loading="lazy"><img src="images/photo5.jpg" alt="pic" loading="lazy"><img src="images/photo1.jpg" alt="pic" loading="lazy">
+                </div>
+            </div>
+            <div class="menu-text glitch-title" data-text="Memories">Memories</div>
+        </div>
+        <div class="menu-item trigger-blip">
+            <div class="marquee-container">
+                <div class="marquee" style="animation-direction: reverse;">
+                    <img src="images/photo4.jpg" alt="pic" loading="lazy"><img src="images/photo3.jpg" alt="pic" loading="lazy"><img src="images/photo2.jpg" alt="pic" loading="lazy"><img src="images/photo5.jpg" alt="pic" loading="lazy"><img src="images/photo1.jpg" alt="pic" loading="lazy"><img src="images/photo4.jpg" alt="pic" loading="lazy">
+                </div>
+            </div>
+            <div class="menu-text glitch-title" data-text="Adventures">Adventures</div>
+        </div>
+      </div>
+      <div class="scroll-indicator reveal-text delay-2" style="margin-top: 80px; font-size: 0.8rem; letter-spacing: 4px; color: rgba(255,255,255,0.4); text-transform: uppercase; animation: bounce 2s infinite;">Scroll Down ↓</div>
+    </section>
+
+    <div class="spacer"></div>
+
+    <section>
+        <div class="hacker-box reveal-text">
+            <h3>&gt;_ SYSTEM_ACCESS</h3>
+            <p class="hacker-text" id="hacker-target" data-value="Since you are permanently glued to your phone screen anyway, I figured I might as well give you something actually worth looking at. I wrote thousands of lines of code just to build an interactive universe inside your hands. Because basic gifts just don't cut it.">
+                Initializing decryption...
+            </p>
+        </div>
+    </section>
+
+    <div class="spacer"></div>
+
+    <section>
+        <div class="hud-box reveal-text">
+            <div class="hud-stat">
+                <div class="hud-label"><span>Loyalty</span><span>MAX</span></div>
+                <div class="hud-bar-bg"><div class="hud-bar-fill fill-trigger" data-width="100%"></div></div>
+            </div>
+            <div class="hud-stat">
+                <div class="hud-label"><span>Chaos Energy</span><span>99%</span></div>
+                <div class="hud-bar-bg"><div class="hud-bar-fill fill-trigger" data-width="99%"></div></div>
+            </div>
+            <div class="hud-stat">
+                <div class="hud-label"><span>Braincells Shared</span><span>2%</span></div>
+                <div class="hud-bar-bg"><div class="hud-bar-fill fill-trigger" style="background: #ff0000; box-shadow: 0 0 10px #ff0000;" data-width="2%"></div></div>
+            </div>
+        </div>
+    </section>
+
+    <div class="spacer"></div>
+
+    <section class="orbit-section reveal-text">
+        <div class="spinner">
+            <div class="orbit-panel p1"><img src="images/photo1.jpg" loading="lazy"></div>
+            <div class="orbit-panel p2"><img src="images/photo2.jpg" loading="lazy"></div>
+            <div class="orbit-panel p3"><img src="images/photo3.jpg" loading="lazy"></div>
+            <div class="orbit-panel p4"><img src="images/photo4.jpg" loading="lazy"></div>
+            <div class="orbit-panel p5"><img src="images/photo5.jpg" loading="lazy"></div>
+            <div class="orbit-panel p6"><img src="images/photo1.jpg" loading="lazy"></div>
+        </div>
+    </section>
+
+    <div class="spacer"></div> 
+
+    <div class="poster-section">
+        <div class="poster-item poster-left trigger-blip">
+            <img src="images/highlight1.jpg" loading="lazy" id="highlight1-img">
+            <div class="poster-content">
+                <h2 class="glitch-title poster-title" data-text="Absolute Best">Absolute Best</h2>
+                <p class="poster-subtitle">Memory One</p>
+            </div>
+        </div>
+        <div class="poster-item poster-right trigger-blip">
+            <img src="images/highlight2.jpg" loading="lazy" id="highlight2-img">
+            <div class="poster-content">
+                <h2 class="glitch-title poster-title" data-text="Core Memory">Core Memory</h2>
+                <p class="poster-subtitle">Memory Two</p>
+            </div>
+        </div>
+    </div>
+
+    <section>
+        <div class="video-container reveal-text">
+            <h2 class="glitch-title" data-text="The Director's Cut">The Director's Cut</h2>
+            <div class="video-frame">
+                <video class="edit-player" autoplay loop muted playsinline>
+                    <source src="edit.mp4" type="video/mp4">
+                </video>
+            </div>
+        </div>
+    </section>
+
+    <div class="spacer"></div>
+
+    <section>
+        <div class="timeline reveal-text">
+            <div class="time-node">
+                <span class="t-time">11:00 PM</span>
+                <span class="t-desc">"I'm actually going to sleep early tonight."</span>
+            </div>
+            <div class="time-node reveal-text delay-1">
+                <span class="t-time">1:30 AM</span>
+                <span class="t-desc">Sending each other increasingly unhinged reels.</span>
+            </div>
+            <div class="time-node reveal-text delay-2">
+                <span class="t-time">4:00 AM</span>
+                <span class="t-desc">Deep, philosophical life talks completely fueled by caffeine and sleep deprivation.</span>
+            </div>
+        </div>
+    </section>
+
+    <div class="spacer"></div>
+
+    <section style="padding: 5vh 0;">
+      <div class="cards-container" id="cards-section">
+        <div class="flip-card trigger-blip">
+          <div class="flip-card-inner"><div class="glare"></div><div class="flip-card-front"><h2>Through It All</h2><p>For the endless laughs and midnight talks.</p><div class="emoji">🐈</div><div class="hover-hint">( Tap to Flip )</div></div><div class="flip-card-back"><img src="images/photo1.jpg" alt="Memories" loading="lazy"></div></div>
+        </div>
+        <div class="flip-card trigger-blip">
+          <div class="flip-card-inner"><div class="glare"></div><div class="flip-card-front"><h2>My Favorite Weirdo</h2><p>Life is just better when we are causing chaos.</p><div class="emoji">🌷</div><div class="hover-hint">( Tap to Flip )</div></div><div class="flip-card-back"><img src="images/photo2.jpg" alt="Memories" loading="lazy"></div></div>
+        </div>
+        <div class="flip-card trigger-blip">
+          <div class="flip-card-inner"><div class="glare"></div><div class="flip-card-front"><h2>To More Memories</h2><p>Keep scrolling, the best part is yet to come.</p><div class="emoji">💖</div><div class="hover-hint">( Tap to Flip )</div></div><div class="flip-card-back"><img src="images/photo3.jpg" alt="Memories" loading="lazy"></div></div>
+        </div>
+      </div>
+    </section>
+
+    <div class="spacer"></div> 
+
+    <section>
+        <h2 class="reveal-text glitch-title" data-text="The Vault" style="font-size: 2rem; letter-spacing: 5px; text-transform: uppercase;">The Vault</h2>
+        <div class="vault-grid reveal-text delay-1">
+            <div class="vault-item trigger-blip"><img src="images/photo1.jpg" loading="lazy"></div>
+            <div class="vault-item trigger-blip"><img src="images/photo2.jpg" loading="lazy"></div>
+            <div class="vault-item trigger-blip"><img src="images/photo3.jpg" loading="lazy"></div>
+            <div class="vault-item trigger-blip"><img src="images/photo4.jpg" loading="lazy"></div>
+            <div class="vault-item trigger-blip"><img src="images/photo5.jpg" loading="lazy"></div>
+            <div class="vault-item trigger-blip"><img src="images/photo1.jpg" loading="lazy"></div>
+        </div>
+    </section>
+
+    <div class="spacer"></div>
+    
+    <section class="final-layout" id="final-text">
+        <div class="text-column">
+            <h1 class="reveal-text glitch-title" data-text="Our Story">Our<br>Story</h1>
+            <p class="reveal-text delay-1">Every picture tells a story, and ours is my absolute favorite. To all the chaos, the laughs, and the unforgettable moments we've shared.</p>
+            <p class="sleepy-text reveal-text delay-2">And yes... I know you would probably rather be sleeping right now 😴, but wake up and look at how cute we are!</p>
+        </div>
+        <div class="cube-touch-zone trigger-blip" id="cube-zone"></div>
+        <div id="secret-message">Love you bestie 💖</div>
+    </section>
+
+  </div>
+
+  <script type="importmap">{"imports": {"three": "https://unpkg.com/three@0.152.2/build/three.module.js","three/addons/": "https://unpkg.com/three@0.152.2/examples/jsm/"}}</script>
+
+  <script type="module">
+    import * as THREE from 'three';
+
+    const isMobile = window.innerWidth < 768;
+    const bgMusic = document.getElementById('bg-music');
+    const beginBtn = document.getElementById('begin-btn');
+    const endBtn = document.getElementById('end-btn');
+
+    // --- NATIVE UI AUDIO SYNTHESIZER ---
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    let audioCtx;
+    
+    function initAudio() {
+        if(!audioCtx) audioCtx = new AudioContext();
+        if(audioCtx.state === 'suspended') audioCtx.resume();
+    }
+
+    function playUIBlip() {
+        if(!audioCtx) return;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine'; 
+        osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(300, audioCtx.currentTime + 0.1);
+        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+    }
+
+    document.querySelectorAll('.trigger-blip').forEach(el => {
+        el.addEventListener('mouseenter', () => { if(!isMobile) playUIBlip(); });
+        el.addEventListener('touchstart', () => playUIBlip(), {passive:true});
+    });
+
+    // --- BRUTALIST PRELOADER ---
+    let loadCount = 0;
+    const counterEl = document.getElementById('load-counter');
+    const preloader = document.getElementById('preloader');
+    const enterScreen = document.getElementById('enter-screen');
+
+    let loaderInterval = setInterval(() => {
+        loadCount += Math.floor(Math.random() * 5) + 1;
+        if(loadCount >= 100) {
+            loadCount = 100;
+            clearInterval(loaderInterval);
+            setTimeout(() => {
+                preloader.style.transform = 'translateY(-100%)';
+                preloader.style.opacity = '0';
+                enterScreen.style.display = 'flex';
+            }, 400);
+        }
+        counterEl.innerText = loadCount.toString().padStart(3, '0');
+        counterEl.style.webkitTextStrokeColor = `rgba(255, 105, 180, ${loadCount/100})`;
+    }, 25);
+    
+    function fireConfetti() {
+        for(let i=0; i<40; i++) {
+            let conf = document.createElement('div');
+            conf.className = 'confetti';
+            conf.style.left = '50%'; conf.style.top = '50%';
+            conf.style.background = ['#ff69b4', '#00f2fe', '#fff', '#ffff00'][Math.floor(Math.random()*4)];
+            enterScreen.appendChild(conf);
+            let angle = Math.random() * Math.PI * 2;
+            let velocity = 150 + Math.random() * 250;
+            conf.animate([ { transform: 'translate(0,0) scale(1)', opacity: 1 }, { transform: `translate(${Math.cos(angle)*velocity}px, ${Math.sin(angle)*velocity}px) scale(0)`, opacity: 0 } ], { duration: 800 + Math.random()*500, easing: 'cubic-bezier(.37,0,.23,1)' });
+            setTimeout(() => conf.remove(), 1500);
+        }
+    }
+
+    // --- GAME LOGIC ---
+    let interactions = 0; let allowedToClick = false;
+    const getSafeCoord = (max, padding) => Math.random() * (max - padding * 2) + padding;
+
+    function runaway(btn, aggressive = false) {
+        if(allowedToClick && btn === beginBtn) return; 
+        btn.style.transform = 'none';
+        btn.style.transition = aggressive ? 'all 0.1s ease-out' : 'all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)';
+        const padding = isMobile ? 60 : 120;
+        btn.style.left = `${getSafeCoord(window.innerWidth, padding + btn.offsetWidth / 2)}px`; 
+        btn.style.top = `${getSafeCoord(window.innerHeight, padding + btn.offsetHeight / 2)}px`;
+        
+        if(btn === beginBtn) {
+            interactions++;
+            if(interactions >= 5) {
+                allowedToClick = true;
+                beginBtn.textContent = "Okay fine, click me.";
+                beginBtn.style.background = "rgba(255, 105, 180, 0.2)";
+                endBtn.style.opacity = '0'; endBtn.style.pointerEvents = 'none';
+            }
+        }
+    }
+
+    if(isMobile) {
+        beginBtn.addEventListener('touchstart', (e) => { if(!allowedToClick) { runaway(beginBtn); e.preventDefault(); } });
+        endBtn.addEventListener('touchstart', (e) => { runaway(endBtn, true); e.preventDefault(); });
+    } else {
+        beginBtn.addEventListener('mouseover', () => runaway(beginBtn));
+        endBtn.addEventListener('mouseover', () => runaway(endBtn, true));
+    }
+
+    beginBtn.addEventListener('click', () => {
+        if(!allowedToClick && interactions < 5) { runaway(beginBtn); return; }
+        initAudio(); 
+        playUIBlip();
+        fireConfetti();
+        bgMusic.volume = 0.6; bgMusic.play().catch(e => console.log("Audio failed.", e));
+        setTimeout(() => {
+            enterScreen.style.opacity = '0';
+            setTimeout(() => { enterScreen.style.display = 'none'; }, 1500);
+            setTimeout(() => { document.querySelectorAll('section:first-child .reveal-text').forEach(el => el.classList.add('visible')); }, 500);
+        }, 800); 
+    });
+
+    // --- HACKER DECODE ---
+    const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%&*";
+    const hackerTarget = document.getElementById('hacker-target');
+    const finalHackerText = hackerTarget.getAttribute('data-value');
+    let hasHacked = false;
+
+    function decodeText() {
+        if(hasHacked) return; hasHacked = true;
+        let iterations = 0;
+        const interval = setInterval(() => {
+            hackerTarget.innerText = finalHackerText.split("").map((l, i) => i < iterations ? finalHackerText[i] : letters[Math.floor(Math.random() * letters.length)]).join("");
+            if(iterations >= finalHackerText.length) { 
+                clearInterval(interval); 
+                hackerTarget.innerHTML = finalHackerText.replace('thousands of lines of code', '<span class="hacker-highlight">thousands of lines of code</span>').replace('interactive universe', '<span class="hacker-highlight">interactive universe</span>');
+            }
+            iterations += 1/3; 
+        }, 30);
+    }
+
+    // --- SCROLL REVEALS ---
+    const revealObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('visible');
+                
+                // Handling special reveals for the new Poster items (Level 5)
+                if(entry.target.classList.contains('poster-item')) entry.target.classList.add('in-view');
+
+                if(entry.target.classList.contains('hacker-box')) decodeText();
+                if(entry.target.classList.contains('hud-box')) entry.target.querySelectorAll('.fill-trigger').forEach(bar => bar.style.width = bar.getAttribute('data-width'));
+            }
+        });
+    }, { threshold: 0.15 });
+    document.querySelectorAll('#content section:not(:first-child) .reveal-text, .hacker-box, .hud-box, .vault-grid, .poster-item').forEach(el => revealObserver.observe(el));
+
+    // --- CARDS ---
+    const observerCards = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            const cardsList = entry.target.querySelectorAll('.flip-card');
+            if (entry.isIntersecting) { cardsList.forEach((card, index) => { setTimeout(() => { card.classList.add('in-view'); }, index * 200); }); } 
+            else { cardsList.forEach((card) => { card.classList.remove('in-view'); }); }
+        });
+    }, { threshold: 0.1 }); 
+    observerCards.observe(document.getElementById('cards-section'));
+
+    const cardsNode = document.querySelectorAll('.flip-card');
+    cardsNode.forEach(card => {
+        const inner = card.querySelector('.flip-card-inner');
+        const glare = card.querySelector('.glare');
+        let isFlipped = false;
+        if (!isMobile) {
+            card.addEventListener('mousemove', (e) => {
+                if(isFlipped) return; card.classList.remove('smooth-return');
+                const rect = card.getBoundingClientRect(); const x = e.clientX - rect.left; const y = e.clientY - rect.top;
+                const centerX = rect.width / 2; const centerY = rect.height / 2;
+                glare.style.background = `radial-gradient(circle at ${(x / rect.width) * 100}% ${(y / rect.height) * 100}%, rgba(255,255,255,0.15) 0%, transparent 60%)`;
+                inner.style.transform = `rotateX(${((y - centerY) / centerY) * -15}deg) rotateY(${((x - centerX) / centerX) * 15}deg) scale(1.05)`;
+            });
+            card.addEventListener('mouseleave', () => { isFlipped = false; card.classList.add('smooth-return'); inner.style.transform = `rotateX(0deg) rotateY(0deg) scale(1)`; glare.style.opacity = 1; });
+        } else { card.addEventListener('mouseleave', () => { isFlipped = false; card.classList.add('smooth-return'); inner.style.transform = `rotateX(0deg) rotateY(0deg) scale(1)`; }); }
+        card.addEventListener('click', () => {
+            isFlipped = !isFlipped; card.classList.add('smooth-return');
+            inner.style.transform = isFlipped ? `rotateX(0deg) rotateY(180deg) scale(1.05)` : `rotateX(0deg) rotateY(0deg) scale(1)`;
+            glare.style.opacity = isFlipped ? 0 : 1;
+            playUIBlip();
+        });
+    });
+
+    // --- 3D ENGINE ---
+    const canvasContainer = document.getElementById('canvas-container');
+    const scene = new THREE.Scene(); scene.background = new THREE.Color(0x050505); 
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000); camera.position.set(0, 0, 10); 
+    const renderer = new THREE.WebGLRenderer({ antialias: false, alpha: true }); 
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(isMobile ? 1 : Math.min(window.devicePixelRatio, 1.5));
+    canvasContainer.appendChild(renderer.domElement);
+
+    // FLUID SHADER
+    const trailSize = 45; const trailPositions = [];
+    for (let i = 0; i < trailSize; i++) { trailPositions.push(new THREE.Vector4(2.0, 2.0, 999.0, 0.0)); }
+    const waveUniforms = { u_time: { value: 0 }, u_resolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) }, u_trail: { value: trailPositions }, u_scrollVelocity: { value: 0 } };
+    const waveShaderMaterial = new THREE.ShaderMaterial({
+      uniforms: waveUniforms,
+      vertexShader: `varying vec2 v_uv; void main() { v_uv = uv; gl_Position = vec4(position, 1.0); }`,
+      fragmentShader: `
+        uniform float u_time; uniform vec2 u_resolution; uniform vec4 u_trail[45]; uniform float u_scrollVelocity; varying vec2 v_uv;
+        void main() {
+            vec2 uv = gl_FragCoord.xy / u_resolution.xy; uv.x *= u_resolution.x / u_resolution.y; vec3 totalColor = vec3(0.0);
+            for(int i = 0; i < 45; i++) {
+                float age = u_trail[i].z; if(age > 1.0) continue; 
+                vec2 pos = u_trail[i].xy; pos.x *= u_resolution.x / u_resolution.y; float velocity = u_trail[i].w; 
+                float dist = length(uv - pos);
+                float radius = 0.025 + (velocity * 2.5) + (age * 0.02); 
+                float fade = pow(max(0.0, 1.0 - age), 1.8); 
+                float glow = smoothstep(radius, radius - 0.02, dist);
+                vec3 dropColor = mix(vec3(1.0, 0.0, 0.5), vec3(0.0, 0.9, 1.0), age);
+                totalColor += dropColor * glow * fade;
+            }
+            gl_FragColor = vec4(1.0 - exp(-totalColor), 1.0);
+        }
+      `, depthWrite: false, transparent: true
+    });
+    const fluidMesh = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), waveShaderMaterial);
+    scene.add(fluidMesh);
+
+    // WARP SPEED STARFIELD
+    const particlesGeometry = new THREE.BufferGeometry();
+    const particlesCount = isMobile ? 800 : 2000;
+    const posArray = new Float32Array(particlesCount * 3);
+    for(let i=0; i<particlesCount*3; i++) posArray[i] = (Math.random() - 0.5) * 30;
+    particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+    const particlesMaterial = new THREE.PointsMaterial({ size: 0.05, color: 0x00f2fe, transparent: true, opacity: 0.4, blending: THREE.AdditiveBlending });
+    const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
+    scene.add(particlesMesh);
+
+    // MAIN CUBE
+    const materials = ['images/photo1.jpg', 'images/photo2.jpg', 'images/photo3.jpg', 'images/photo4.jpg', 'images/photo5.jpg', 'images/photo2.jpg'].map(p => new THREE.MeshBasicMaterial({ map: new THREE.TextureLoader().load(p), side: THREE.DoubleSide }));
+    const posterCube = new THREE.Mesh(new THREE.BoxGeometry(isMobile ? 2.5 : 3.5, isMobile ? 2.5 : 3.5, isMobile ? 2.5 : 3.5), materials);
+    posterCube.position.set(isMobile ? 0 : 3, -25, 0); 
+    scene.add(posterCube);
+
+    // TORUS KNOT ORBIT
+    const torusGeometry = new THREE.TorusKnotGeometry(isMobile ? 2.2 : 3, 0.1, 100, 16);
+    const torusMaterial = new THREE.MeshBasicMaterial({ color: 0xff69b4, wireframe: true, transparent: true, opacity: 0.3 });
+    const torusMesh = new THREE.Mesh(torusGeometry, torusMaterial);
+    posterCube.add(torusMesh); // Attached to cube so it moves with it
+
+    // --- GYROSCOPE PARALLAX (NOW USED FOR POSTER TOO) ---
+    let gyroX = 0; let gyroY = 0;
+    if(window.DeviceOrientationEvent) {
+        window.addEventListener('deviceorientation', (e) => {
+            gyroX = e.gamma ? (e.gamma / 90) * 1.5 : 0; 
+            gyroY = e.beta ? (e.beta / 90) * 1.5 : 0;
+        });
+    }
+
+    // --- CUBE SWIPE & ENDING ---
+    let hyperDrive = false; const secretMessage = document.getElementById('secret-message'); const cubeZone = document.getElementById('cube-zone');
+    let isDraggingCube = false; let manualRotationVelocity = 0; let previousMouseX = 0;
+
+    cubeZone.addEventListener('click', () => { if(!hyperDrive) { playUIBlip(); hyperDrive = true; secretMessage.classList.add('revealed'); setTimeout(() => { hyperDrive = false; secretMessage.classList.remove('revealed'); }, 4000); } });
+    cubeZone.addEventListener('touchstart', (e) => { isDraggingCube = true; previousMouseX = e.touches[0].clientX; }, {passive: true});
+    cubeZone.addEventListener('touchmove', (e) => { if(isDraggingCube) { manualRotationVelocity = (e.touches[0].clientX - previousMouseX) * 0.005; previousMouseX = e.touches[0].clientX; } }, {passive: true});
+    cubeZone.addEventListener('touchend', () => { isDraggingCube = false; }, {passive: true});
+    cubeZone.addEventListener('mousedown', (e) => { isDraggingCube = true; previousMouseX = e.clientX; });
+    window.addEventListener('mousemove', (e) => { if(isDraggingCube) { manualRotationVelocity = (e.clientX - previousMouseX) * 0.005; previousMouseX = e.clientX; } });
+    window.addEventListener('mouseup', () => { isDraggingCube = false; });
+
+    // TRACKING & SCROLL
+    let targetX = 0.5, targetY = 0.5, lastX = 0.5, lastY = 0.5, currentSpeed = 0.0;
+    const updateTracking = (ex, ey) => { targetX = ex / window.innerWidth; targetY = (window.innerHeight - ey) / window.innerHeight; };
+    document.addEventListener('mousemove', (e) => updateTracking(e.clientX, e.clientY));
+    document.addEventListener('touchmove', (e) => { if(e.touches.length > 0) updateTracking(e.touches[0].clientX, e.touches[0].clientY); }, { passive: true });
+
+    let scrollProgress = 0; let scrollVelocity = 0; let lastScrollY = window.scrollY;
+    window.addEventListener('scroll', () => {
+      scrollProgress = Math.max(0, Math.min(window.scrollY / (document.body.scrollHeight - window.innerHeight), 1.0));
+      scrollVelocity = Math.abs(window.scrollY - lastScrollY) * 0.01; lastScrollY = window.scrollY;
+    });
+
+    // --- POSTER INTERACTION LOGIC (NEW) ---
+    const highlight1Img = document.getElementById('highlight1-img');
+    const highlight2Img = document.getElementById('highlight2-img');
+
+    const clock = new THREE.Clock(); let lastTime = 0; let currentCubeY = -25;
+    function animate() {
+      requestAnimationFrame(animate);
+      let time = clock.getElapsedTime(), delta = time - lastTime; lastTime = time; waveUniforms.u_time.value = time;
+      
+      // Dynamic Scroll Velocity Smoothing
+      scrollVelocity += (0 - scrollVelocity) * 0.1; waveUniforms.u_scrollVelocity.value = scrollVelocity;
+      
+      let rawSpeed = Math.sqrt(Math.pow(targetX - lastX, 2) + Math.pow(targetY - lastY, 2));
+      lastX += (targetX - lastX) * 0.6; lastY += (targetY - lastY) * 0.6; currentSpeed += (rawSpeed - currentSpeed) * 0.15;
+      
+      for (let i = trailSize - 1; i > 0; i--) { trailPositions[i].set(trailPositions[i-1].x, trailPositions[i-1].y, trailPositions[i-1].z + delta, trailPositions[i-1].w); }
+      trailPositions[0].set(lastX, lastY, 0.0, currentSpeed);
+
+      // Starfield Warp Effect
+      particlesMesh.position.y = (window.scrollY * 0.005) % 10;
+      particlesMesh.rotation.y = time * 0.05;
+      
+      if(scrollVelocity > 0.5) {
+          particlesMaterial.size = Math.min(0.2, scrollVelocity * 0.1);
+          particlesMesh.scale.y = 1 + scrollVelocity * 5; // Stretch lines
+      } else {
+          particlesMaterial.size += (0.05 - particlesMaterial.size) * 0.1;
+          particlesMesh.scale.y += (1 - particlesMesh.scale.y) * 0.1;
+      }
+
+      // Gyro Shift for 3D Scene
+      camera.position.x += (gyroX - camera.position.x) * 0.05;
+      camera.position.y += (-gyroY - camera.position.y) * 0.05;
+      camera.lookAt(0,0,0); 
+
+      // Gyro Shift for Cinematic Poster (NEW)
+      if(isMobile) {
+          // Subtle opposite shift for dynamic feel
+          highlight1Img.style.transform = `scale(1.1) translate(${gyroX * 5}px, ${gyroY * 5}px)`;
+          highlight2Img.style.transform = `scale(1.1) translate(${-gyroX * 5}px, ${-gyroY * 5}px)`;
+      } else {
+          // Mouse-based shift for desktop (NEW)
+          const centerX = window.innerWidth / 2;
+          const centerY = window.innerHeight / 2;
+          const moveX = (targetX * window.innerWidth - centerX) * 0.01; // subtle amount
+          const moveY = (window.innerHeight - targetY * window.innerHeight - centerY) * 0.01;
+          
+          highlight1Img.style.transform = `scale(1.1) translate(${moveX}px, ${moveY}px)`;
+          highlight2Img.style.transform = `scale(1.1) translate(${-moveX}px, ${-moveY}px)`;
+      }
+
+      // Cube entrance at very end
+      let targetCubeY = -25; 
+      if (scrollProgress > 0.90) { targetCubeY = -15 + (1 - Math.pow(1 - Math.min((scrollProgress - 0.90) / 0.10, 1.0), 4)) * 15; if (isMobile) targetCubeY -= 2; }
+      currentCubeY += (targetCubeY - currentCubeY) * 0.1; posterCube.position.y = currentCubeY;
+      
+      manualRotationVelocity *= 0.92; 
+      
+      // Geometry Rotations
+      torusMesh.rotation.x -= 0.01;
+      torusMesh.rotation.y += 0.015;
+
+      if (hyperDrive) { 
+          posterCube.rotation.y += 0.2; posterCube.rotation.x += 0.1; 
+          torusMesh.scale.set(1.5, 1.5, 1.5);
+          torusMaterial.opacity = 0.8;
+      } else { 
+          posterCube.rotation.y += (isDraggingCube ? 0 : 0.003) + (scrollVelocity * 0.2) + manualRotationVelocity; 
+          posterCube.rotation.x += (isDraggingCube ? 0 : 0.001) + (scrollVelocity * 0.1); 
+          torusMesh.scale.set(1, 1, 1);
+          torusMaterial.opacity = 0.3;
+      }
+      
+      renderer.render(scene, camera);
+    }
+    animate();
+    window.addEventListener('resize', () => { camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); waveUniforms.u_resolution.value.set(window.innerWidth, window.innerHeight); posterCube.position.x = window.innerWidth < 768 ? 0 : 3; });
+  </script>
+</body>
+</html>
